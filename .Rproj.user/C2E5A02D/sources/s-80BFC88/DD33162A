@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1578676608182.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "494241923",
+    "id" : "DD33162A",
+    "lastKnownWriteTime" : 1578676620,
+    "last_content_update" : 1578676620,
+    "path" : "~/Desktop/OptimPackage/R/Optimfuns.R",
+    "project_path" : "R/Optimfuns.R",
+    "properties" : {
+        "cursorPosition" : "95,0",
+        "scrollLine" : "65"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,11 @@
+Package: HimmelblauOptimisation
+Type: Package
+Title: Functions for optimisation of Himmelblau's function
+Version: 0.1.0
+Author: Michael Whitehouse
+Maintainer: <m.whitehouse@bristol.ac.uk>
+Description: Functions for optimisation of Himmelblau's function, gradient descent and newton's method
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.0.2
