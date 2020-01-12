@@ -93,3 +93,27 @@ Himmelblau_Newton <- function(x0,epsilon){
   }
   return(trajectory)
 }
+
+#' Title
+#'
+#' @param t trajectory
+#'
+#' @return a plot of the optimisation trajetory on the Himmelblau function xlim = ylim = c(-5,5)
+#' @export
+#'
+#' @examples
+plot_trajectory <- function(t){
+  x1 <- seq(from = -5,to = 5, by =0.1) ## produce contour plot of Himmelblau's function
+  contourmatrix <- outer(
+    x1,
+    x1,
+    Vectorize(function(x,y) f(x,y)))
+  contour(contourmatrix, nlevels = 50, drawlabels = F,xaxt='n',yaxt='n')
+
+
+
+  points(t[1,1],t[2,1])
+  for (i in c(1:(length(t[1,])-1))){
+    segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'red')
+  }
+}

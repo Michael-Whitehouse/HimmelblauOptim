@@ -1,0 +1,535 @@
+---
+title: "Optimisation"
+output:   pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Optimisation
+
+When we 'optimise' we are finding the 'best' of all the possible solutions. Whilst we can tackle optimisation of a function of discrete variables, we will focus on those of continuous. WLOG we can consider the problem of minimising a function $f$, since $max(f)=min(-f)$. 
+
+### One Dimensional Optimisation
+
+Firstly, let's consider the one dimensional case, so that we can easily visualise the function:
+
+```{r}
+f= function(x) cos(x)+ 2*cos(3*x)+0.5*sin(2*x)
+curve(f, 0, 2*pi)
+```
+
+We can see by inspection of the plot that the minimum point of $f$ is achieved at just above $3$ where it achieves just less than $-3$.
+
+### The `optimize` function 
+
+the `optimize` function is an `R` core function which can be applied to one variable functions, we call `optimize()` and s
+
+```{r}
+optimize(f, interval = c(0,2*pi))
+```
+
+Clearly, the `optimize` function has actuaylly found a _local_ minimum at $1.13$, not the desired global minimum. If we change the interval we find:
+```{r}
+optimize(f, interval = c(0.5,2*pi))
+```
+Interesting. This time we have indeed found the global minimum, even though t the local minimum we originally found is still in the considered interval. 
+According to the documentation, `optimize` uses a 'golden section search' based method - if this method is used on an interval with multiple extrema, there is no guarantee that it will achieve the global minimum.
+
+### Newton's method
+
+The Newton (or Newton-Raphson) method aims to find the root of a function $g$. We assume $g$ has taylor expansion:
+
+$$g(x) \approx g(x_0) +g'(x_0)(x-x_0).$$
+
+If we set this to zero we get:
+
+$$0 = g(x_0) +g'(x_0)(x-x_0) \iff x = x_0 + \frac{g(x_0)}{g'(x_0)}.$$
+Which naturally suggests an iterative method $x_{k+1} = x_k+ \frac{g(x_k)}{g'(x_k)}$.
+
+Let's implement this method:
+
+```{r}
+f = expression(cos(x)+ 2*cos(3*x)+0.5*sin(2*x))
+f_1 = D(f, 'x');  f1 = function(x) eval(f_1)
+f_2 = D(f_1, 'x');  f2 = function(x) eval(f_2)
+f= function(x) cos(x)+ 2*cos(3*x)+0.5*sin(2*x)
+x=3
+
+for (i in 1:6){
+  x <- x-f1(x)/f2(x)
+  print(x)
+}
+
+```
+
+
+
+We see that the method converges rather quickly to a stationary point.
+
+# Multi-dimensional Optimisation
+
+Most optimisation problems we encounter in practise will be multi-dimensional, methods to tackle these problems include:
+
+* Simplex methods
+* Gradient methods
+* Newton and Quasi-Newton Methods.
+
+## Descent Direction Methods
+
+We will now consider the unconstrained minimisation problem:
+
+$$ min\{f(x):x \in \mathbb{R}^n \}.$$
+
+We assume that $f$ is continuously differentiable over $\mathbb{R}^n$. It is a well known fact that a first order optimality condition is that the gradient vanishes at optimal points. Whilst this is useful for solving 'nice' problems; most practical situations cannot be treated with this method. This can be due to numorous reasons including:
+
+* It may be difficult to solve a possibly intractible set of (possibly non-linear) equations $\nabla f(x_k) = 0$.
+* Even if we can, there may be infinite solutions; finding the one which corresponds to the global minimum is non-trivial in itself.
+
+Iterative descent algorithms take the form:
+
+$$ \boldsymbol{ x_{k+1} = x_k + t_kd_k},\text{ } k = 1,2,\dots $$
+
+Where $d_k$ is the _descent direction_ and t_k is the _stepsize_. 
+Consider $f: \mathbb{R}^n \rightarrow \mathbb{R}$, we call $\boldsymbol{d} \in \mathbb{R}^n$ a descent direction of $f$ at $\boldsymbol{x}$ if:
+
+$$ f'(\boldsymbol{x;d}) = \nabla f(\boldsymbol{x}^\top)\boldsymbol{d}<0, $$
+which in turn implies the property:
+
+$$ f(\boldsymbol{x}+t\boldsymbol{d})<f(\boldsymbol{x}). $$
+_proof_. Since $f'(\boldsymbol{x;d})<0,$ it follows from the definition of the direction derivative that:
+
+$$ \lim_{t \rightarrow0^+} \frac{f(\boldsymbol{x} + t\boldsymbol{d}) - f(\boldsymbol{x})}{t} = f'(\boldsymbol{x;d})<0. $$
+Therefore $\exists \varepsilon >0$ such that:
+
+$$  \frac{f(\boldsymbol{x} + t\boldsymbol{d}) - f(\boldsymbol{x})}{t}<0, \forall t \in (0,\varepsilon]. \space \space \space \square $$
+
+These results give us the _Schematic Descent Directions Method_:
+
+* Initialise: choose an arbitrary start point $x_0 \in \mathbb{R}^n$
+* for $k=1,2, \dots$:
+  * Pick descent direction $\boldsymbol{d_k}$
+  * Find stepsize $t_k$ satisfying $f(\boldsymbol{x_k} +t_k\boldsymbol{d-k})<f(\boldsymbol{x_k})$
+  * Set $\boldsymbol{x_{k+1} = x_k} + t_k\boldsymbol{d_k}.$
+  * If stopping criterion is satisfied then return $x_{k+1}$
+  
+This is all well and good, but how do we choose $\boldsymbol{d_k}$ and $t_k$?
+
+## Gradient descent
+
+The most popular descent method is the *gradient* method. Suppose we have a multivariable function $f(x),x \in \mathbb{R}^n$, then gradient descent consists of iterations:
+
+$$ x_{k+1} = x_k - t \nabla f(x_k),$$
+where $\gamma$ is small. At each iteration we take a small step in the direction $f$ is decreasing the fastest - that is the direction of $-\nabla f(x_k)$.
+
+
+##  Implementation of gradient descent.
+
+Let's implement gradient descent for functions of the form:
+  
+  $$ f(\boldsymbol{x}) = \boldsymbol{xAx^\top +2b^\top x },$$
+  
+as a toy example to look at how gradient descent works (it is clear that the minimum is achieved at 0, nonetheless it is a useful excersise to study the behaviour of gradient descent). To find $t$ we will are able to use an 'exact line search', which means setting $t$ as:
+
+$$ t_k = \min_{t \geq 0} f(\boldsymbol{x_k} + t \boldsymbol{d_k}) $$
+This is easily found to be equivalent to setting $t_k = \frac{||\nabla f(\boldsymbol{x_k})||^2}{2 \nabla f(\boldsymbol{x_k})^\top  \boldsymbol{A} \nabla f(\boldsymbol{x_k})}$
+
+Let's look at the function when 
+
+$$\boldsymbol{A} = \left(\begin{array}{cc} 
+1 & 2\\
+0 & 2
+\end{array}\right)$$
+
+
+We can write the following function to perform a descent trajectory:
+
+```{r}
+gradient_descent <- function(x0,A,b, epsilon){
+  iter <- 1
+  trajectory <- x0
+  x <- x0
+  gr <- 2*(A%*%x+b)
+  while (norm(as.matrix(gr), type = 'F') > epsilon){
+    iter <- iter + 1
+    t <- norm(as.matrix(gr), type = 'F')^2/(2*t(gr)%*%A%*%gr)
+    x <- x - as.numeric(t)*gr
+    gr <- 2*(A%*%x+b)
+    trajectory <- cbind(trajectory, x)
+  }
+  return(trajectory)
+}
+```
+
+Let's see how it performs from various start points with a tolerance level $0.5$ :
+
+```{r}
+gradient_descent(c(1,1), matrix(c(1,0,0,2),2,2),0,0.005)
+gradient_descent(c(0,1), matrix(c(1,0,0,2),2,2),0,0.005)
+gradient_descent(c(1,0), matrix(c(1,0,0,2),2,2),0,0.005)
+```
+
+We instantly notice that if the trajectory begins on the axis then it finds the minimum in 1 step, this is unsurprising since the `0` part of the starting point will give a `0` part in the gradient and the descent direction will point directly to the origin, which in this case is our minimum. In the more interesting case we can plot the trajectory:
+
+
+
+```{r}
+f <- function(x1,x2) t(c(x1,x2))%*%matrix(c(1,2,0,2),2,2)%*%c(x1,x2)
+x1 <- seq(from = -1,to = 1, by =0.1)
+contourmatrix <- outer(
+     x1,
+     x1,
+     Vectorize(function(x,y) f(x,y)))
+contour(contourmatrix, nlevels =22, drawlabels = F,xaxt='n',yaxt='n')
+t <- (gradient_descent(c(1,1), matrix(c(1,2,0,2),2,2),0,0.005)+1)/2
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'red')
+}
+```
+
+Notice how the trajectory circles the minimum like a drain - this, along with zig zagging (see next plot) is a classic feature of gradient descent. At each step it is clear the path will not pass through the optimum point, emphasising the importance of the choice of $t_k$.
+
+We now run the algorithm on the function:
+
+$$ f(x,y) = x^2 + 2y^2 $$
+i.e $\boldsymbol{A} = \left(\begin{array}{cc} 
+1 & 0\\
+0 & 2
+\end{array}\right)$
+and $\boldsymbol{b}=0$, see the plot below.
+
+
+
+
+```{r}
+x<-seq(-5, 5, length=50)
+y<-seq(-5, 5, length=50)
+
+f<-function(x,y) {
+  x^2+2*y^2
+}
+
+z<-outer(x,y,f)
+
+nrz<-nrow(z)
+ncz<-ncol(z)
+colours <- colorRampPalette(c("blue","cyan","green",
+      "yellow","orange","orange","red", "red", "red"))
+nbcol<-64
+colour<-colours(nbcol)
+zfacet<-z[-1,-1]+z[-1,-ncz]+z[-nrz,-1]+z[-nrz,-ncz]
+facetcol<-cut(zfacet,nbcol)
+persp(x,y,z,col=colour[facetcol],phi=40,theta=45,d=5,r=1,
+      ticktype="detailed",shade=0.1,expand=0.7)
+```
+
+Let's run the gradient descent:
+
+
+
+
+
+```{r}
+f <- function(x1,x2) x1^2 + 2*x2^2 
+x1 <- seq(from = -0.4,to = 1, by =0.1)
+contourmatrix <- outer(
+     x1,
+     x1,
+     Vectorize(function(x,y) f(x,y)))
+contour(contourmatrix, nlevels =22, drawlabels = F,xaxt='n',yaxt='n')
+t <- (gradient_descent(c(1,1), matrix(c(1,0,0,2),2,2),0,0.005)+0.4)/1.4
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'red')
+}
+```
+
+Here we see the classic zig-zag path. It is not immediately apparent, due to the dimensions of the figures, but in both of these cases the direction at the $k^{th}$ iteration is actually orthogonal to the direction at iteration $(k+1)^{th}$. Indeed, this is a general property of gradient descent when $t_k$ is chosen according to an 'exact line search', a proof of which can be found in _Beck(2014)_ 
+
+
+
+## Newton's Method
+
+When we used Newton's method in one dimesion we needed to use the first _and_ second derivatives. Analogously, in the multi-dimensional case, we need the gradient _and_ the Hessian Matrix. The iterative method becomes:
+
+$$x_{k+1} = x_k - [H_{f(x_k)}]^{-1} \nabla f(x_k).$$
+
+This involves taking the inverse of the hessian, which immediately tells us that this method will be computaionally expensive for high dimensional problems. The BFGS algorithm is quasi newton method which uses an approximation to the hessian inverse without needing to perform an explicit inversion.
+
+### Simulated Annealing
+
+
+
+
+# A Case Study: Himmelblau's function.
+
+Naturally, when developing an optimisation method one would like to test it on a function. We would like to use a function which is sufficiently 'difficult' to optimise, for example a strictly convex function - whilst useful for assessing the behaviour of a method - would be a pretty boring choice to test its utility in practice. By 'difficult' to optimise we essentially mean a function which gives rise to an interesting surface; this might mean multi-modal, a function with multiple optimum points, one with a steep gradient in the extremity but which plateaus towards the optimum. A wide range have been suggested across literature on optimisation:
+
+* The Ackley function
+* The Rosenbrock function
+* The Booth function
+* Himmelblau's function
+
+We will look at the latter, see Himmelblau's function plotted below:
+
+
+$$f(x, y) = (x^2+y-11)^2 + (x+y^2-7)^2.$$
+
+
+
+```{r, fig.width=15}
+x<-seq(-5, 5, length=50)
+y<-seq(-5, 5, length=50)
+
+f<-function(x,y) {
+  (x^2 + y -11)^2 + (x + y^2 - 7)^2
+}
+
+z<-outer(x,y,f)
+
+nrz<-nrow(z)
+ncz<-ncol(z)
+colours <- colorRampPalette(c("blue","cyan","green",
+      "yellow","orange","orange","red", "red", "red"))
+nbcol<-64
+colour<-colours(nbcol)
+zfacet<-z[-1,-1]+z[-1,-ncz]+z[-nrz,-1]+z[-nrz,-ncz]
+facetcol<-cut(zfacet,nbcol)
+persp(x,y,z,col=colour[facetcol],phi=40,theta=45,d=5,r=1,
+      ticktype="detailed",shade=0.1,expand=0.7)
+```
+
+The function has one local maximum at $x = - 0.270845$ and $y = - 0.923039$, where $f ( x , y ) = 181.617$ , and 4 global minima:
+
+* $f(3,2) = 0$
+* $f(-2.805118, 3.131312) = 0$
+* $f(-3.779310, -3.283186) = 0$
+* $f(3.584428, -1.848126) = 0$
+
+Whilst these minima can be found analytically, they are roots of cubic polynomials and hence their expressions can be rather complicated. Instead, lets run a few of the algorithms we have discussed.
+
+## Gradient descent
+
+We can work out the gradient of the Himmelblau function anaytically:
+
+$$ \nabla f(x,y) =  \left(\begin{array}{cc} 
+4x(x^2+y - 11) + 2(x+y^2 - 7)\\
+2(x^2+y - 11) + 2y(x+y^2-7) 
+\end{array}\right)$$
+
+
+
+since 
+
+$$ t_k = \min_{t \geq 0} f(\boldsymbol{x_k} + t \boldsymbol{d_k}) ,$$    
+is a one dimensional problem, we will use R's `optim` function using the 'Brent' method as our line search for $t_k$.
+
+```{r}
+Himmelblau_grad <- function(x,y){
+   c(4*x[1]*(x^2+y - 11) + 2*(x+y^2 - 7), 2*(x^2+y - 11) + 2*y*(x+y^2 - 7))
+}
+
+
+
+
+Himmelblau_grad_descent <- function(x0,epsilon,U){
+  trajectory <- x0
+  x <- x0
+  gr <- Himmelblau_grad(x[1],x[2])
+  while(norm(as.matrix(gr), type='F') > epsilon){
+    
+    t <- optim(0, function(t) f(x[1] -t*gr[1], x[2]-t*gr[2]),
+               lower = 0, upper = U,  method =  'Brent' )$par
+    x <- x - as.numeric(t)*gr
+    gr <- Himmelblau_grad(x[1],x[2])
+    trajectory <- cbind(trajectory, x)
+  }
+  return(trajectory)
+}
+
+x1 <- seq(from = -5,to = 5, by =0.1)
+contourmatrix <- outer(
+     x1,
+     x1,
+     Vectorize(function(x,y) f(x,y)))
+contour(contourmatrix, nlevels = 50, drawlabels = F,xaxt='n',yaxt='n')
+
+
+t <- (Himmelblau_grad_descent(c(1,2),0.05,5)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'red')
+}
+
+t <- (Himmelblau_grad_descent(c(-1,1),0.05,5)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'blue')
+}
+
+t <- (Himmelblau_grad_descent(c(4,-4),0.05,5)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'green')
+}
+
+t1 <- (Himmelblau_grad_descent(c(-3,-2),0.05,5)+5)/10
+points(t1[1,1],t1[2,1])
+for (i in c(1:(length(t1[1,])-1))){
+  segments(t1[1,i],t1[2,i],t1[1,i+1],t1[2,i+1], col = 'dark blue')
+}
+```
+
+What we notice straight away here is that Gradient descent will not necessarily find the nearest local optimum to the minimum; indeed, the red and green searches both appear rather eratic. In this instance we observe this behaviour due to the choice of `U`, i.e. how large we allow $t$ to be. Let's see what happens when we reduce this limit:
+
+```{r}
+x1 <- seq(from = -5,to = 5, by =0.1) ## produce contour plot of Himmelblau's function
+contourmatrix <- outer(
+     x1,
+     x1,
+     Vectorize(function(x,y) f(x,y)))
+contour(contourmatrix, nlevels = 50, drawlabels = F,xaxt='n',yaxt='n')
+
+
+t <- (Himmelblau_grad_descent(c(1,2),0.05,0.001)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'red')
+}
+
+t <- (Himmelblau_grad_descent(c(-1,1),0.05,0.001)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'blue')
+}
+
+t <- (Himmelblau_grad_descent(c(4,-4),0.05,0.001)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'green')
+}
+
+t2 <- (Himmelblau_grad_descent(c(-3,-2),0.05,0.001)+5)/10
+  points(t2[1,1],t2[2,1])
+for (i in c(1:(length(t2[1,])-1))){
+  segments(t2[1,i],t2[2,i],t2[1,i+1],t2[2,i+1], col = 'dark blue')
+}
+```
+
+As expected we now see more reasonable paths. Whilst our search is less eratic and finds a minimum close to the starting point it, unsurprisingly, takes much longer:
+
+
+```{r}
+length(t1) # search with max step length 5
+length(t2) # search with max step length 0.001
+```
+
+
+# Newton's method
+
+In order to implement Newton's method we will need the hessian of $f$:
+
+$$ H_{f(x)} = \left(\begin{array}{cc} 
+12x^2+4y -42 & 4x+4y\\
+4x+4y & 6y^2 + 2x -12
+\end{array}\right)$$
+
+
+
+```{r}
+Himmelblau_Hessian <- function(x,y){
+  matrix(c(12*x^2+4*y -42, 4*(x+y),4*(x+y),6*y^2+2*x-12),2,2)
+}
+
+
+Himmelblau_Newton <- function(x0,epsilon){
+  trajectory <- x0
+  x <- x0
+  gr <- Himmelblau_grad(x[1],x[2])
+  while(norm(as.matrix(gr), type='F') > epsilon){
+    x <- x - solve(Himmelblau_Hessian(x[1],x[2]))%*%gr
+    gr <- Himmelblau_grad(x[1],x[2])
+    trajectory <- cbind(trajectory, x)
+  }
+  return(trajectory)
+}
+```
+
+Let's see how Newton's method performs, with the same starting points as before:
+
+```{r}
+x1 <- seq(from = -5,to = 5, by =0.1)  ## produce contour plot of Himmelblau's function
+contourmatrix <- outer(
+     x1,
+     x1,
+     Vectorize(function(x,y) f(x,y)))
+contour(contourmatrix, nlevels = 50, drawlabels = F,xaxt='n',yaxt='n')
+
+
+t <- (Himmelblau_Newton(c(1,2),0.05)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'red')
+}
+
+t <- (Himmelblau_Newton(c(-1,1),0.05)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'blue')
+}
+
+t <- (Himmelblau_Newton(c(4,-4),0.05)+5)/10
+  points(t[1,1],t[2,1])
+for (i in c(1:(length(t[1,])-1))){
+  segments(t[1,i],t[2,i],t[1,i+1],t[2,i+1], col = 'green')
+}
+
+t2 <- (Himmelblau_Newton(c(-3,-2),0.05)+5)/10
+  points(t2[1,1],t2[2,1])
+for (i in c(1:(length(t2[1,])-1))){
+  segments(t2[1,i],t2[2,i],t2[1,i+1],t2[2,i+1], col = 'dark blue')
+}
+```
+
+What a mess.
+
+
+```{r}
+length(t2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# References
+
+_Beck, A., 2014. Introduction to nonlinear optimization: Theory, algorithms, and applications with MATLAB (Vol. 19). Siam._

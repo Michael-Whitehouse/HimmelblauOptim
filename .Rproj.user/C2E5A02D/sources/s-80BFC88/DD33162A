@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "494241923",
+    "hash" : "0",
     "id" : "DD33162A",
-    "lastKnownWriteTime" : 1578676620,
-    "last_content_update" : 1578676620,
+    "lastKnownWriteTime" : 1578823837,
+    "last_content_update" : 1578823837709,
     "path" : "~/Desktop/OptimPackage/R/Optimfuns.R",
     "project_path" : "R/Optimfuns.R",
     "properties" : {
-        "cursorPosition" : "95,0",
-        "scrollLine" : "65"
+        "cursorPosition" : "100,88",
+        "scrollLine" : "89"
     },
     "read_only" : false,
     "read_only_alternatives" : [

@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1578823630492.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1820008805",
+    "id" : "6DE16A71",
+    "lastKnownWriteTime" : 1578590492,
+    "last_content_update" : 1578823874306,
+    "path" : "~/Documents/Rwork/statscomp1portfolio/week8/week8.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "393,0",
+        "last_setup_crc32" : "80BFC88bb338d19",
+        "scrollLine" : "379"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
